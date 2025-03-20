@@ -25,7 +25,7 @@ const getUserWithEmail = function(email) {
    FROM users
    WHERE email = $1;
   `;
-  const queryArgs = [email];
+  const queryArgs = [email.toLowerCase()];
 
   return pool
     .query(queryString, queryArgs)
@@ -63,7 +63,7 @@ const getUserWithId = function(id) {
  * @param {{name: string, password: string, email: string}} user
  * @return {Promise<{}>} A promise to the user.
  */
-const addUser = function(name, email, password) {
+const addUser = function(userObj) {
   const queryString = `
       INSERT INTO
         users (name, email, password)
@@ -72,7 +72,7 @@ const addUser = function(name, email, password) {
       RETURNING *
     `;
   
-  const queryArgs = [name, email, password];
+  const queryArgs = [userObj.name, userObj.email, userObj.password];
   
   return pool
     .query(queryString, queryArgs)
