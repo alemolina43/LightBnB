@@ -123,9 +123,8 @@ const getAllReservations = function(guest_id, limit = 10) {
  * @return {Promise<[{}]>}  A promise to the properties.
  */
 const getAllProperties = (options, limit = 10) => {
-  // 1
   const queryParams = [];
-  // 2
+
   let queryString = `
   SELECT properties.*, avg(property_reviews.rating) as average_rating
   FROM properties
@@ -133,7 +132,7 @@ const getAllProperties = (options, limit = 10) => {
   WHERE TRUE
   `;
 
-  // 3
+  // filters
   if (options.city) {
     queryParams.push(`%${options.city}%`);
     queryString += ` AND city LIKE $${queryParams.length} `;
@@ -163,17 +162,13 @@ const getAllProperties = (options, limit = 10) => {
     queryString += ` HAVING avg(property_reviews.rating) >= $${queryParams.length} `;
   }
 
-  // 4
   queryParams.push(limit);
   queryString += `
   ORDER BY cost_per_night
   LIMIT $${queryParams.length};
   `;
 
-  // 5
   console.log(queryString, queryParams);
-
-  // 6
   return pool.query(queryString, queryParams).then((res) => res.rows);
 };
 
@@ -182,11 +177,40 @@ const getAllProperties = (options, limit = 10) => {
  * @param {{}} property An object containing all of the property details.
  * @return {Promise<{}>} A promise to the property.
  */
-const addProperty = function(property) {
-  const propertyId = Object.keys(properties).length + 1;
-  property.id = propertyId;
-  properties[propertyId] = property;
-  return Promise.resolve(property);
+const addProperty = function(propertyObj) {
+  const queryString = `
+      INSERT INTO
+        properties (owner_id, title, description, thumbnail_photo_url, cover_photo_url, 
+        cost_per_night, street, city, province, post_code, country, parking_spaces, 
+        number_of_bathrooms, number_of_bedrooms)
+      VALUES
+      ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      RETURNING *
+    `;
+  
+  const queryArgs = [
+    propertyObj.owner_id,
+    propertyObj.title,
+    propertyObj.description,
+    propertyObj.thumbnail_photo_url,
+    propertyObj.cover_photo_url,
+    propertyObj.cost_per_night,
+    propertyObj.street,
+    propertyObj.city,
+    propertyObj.province,
+    propertyObj.post_code,
+    propertyObj.country,
+    propertyObj.parking_spaces,
+    propertyObj.number_of_bathrooms,
+    propertyObj.number_of_bedrooms
+  ];
+  
+  return pool
+    .query(queryString, queryArgs)
+    .then((result) => result.rows[0])
+    .catch((err) => {
+      console.log(err.message);
+    });
 };
 
 module.exports = {
